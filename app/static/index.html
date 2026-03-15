@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>具身机器人知识问答测试台</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <!-- 顶部说明区只承担测试台定位，不放复杂导航，避免干扰联调。 -->
+      <section class="hero">
+        <p class="eyebrow">Embodied Robot RAG Playground</p>
+        <h1>具身机器人知识问答测试台</h1>
+        <p class="subtitle">
+          用于验证后端问答链路、检索效果和人工反馈准确率。当前页面仅做内部测试，不追求复杂前端。
+        </p>
+      </section>
+
+      <section class="layout">
+        <!-- 左侧用预置问题帮助快速做冒烟测试和演示。 -->
+        <aside class="panel side-panel">
+          <h2>推荐问题</h2>
+          <button class="preset" data-question="具身机器人在仓储场景最有可能优先落地哪些任务？">
+            具身机器人在仓储场景最有可能优先落地哪些任务？
+          </button>
+          <button class="preset" data-question="制造业为什么需要具身机器人替代部分柔性装配岗位？">
+            制造业为什么需要具身机器人替代部分柔性装配岗位？
+          </button>
+          <button class="preset" data-question="未来三年养老康复场景对具身机器人的核心能力需求是什么？">
+            未来三年养老康复场景对具身机器人的核心能力需求是什么？
+          </button>
+          <button class="preset" data-question="如果要提升项目问答准确率，应该优先补充哪些类型的知识库资料？">
+            如果要提升项目问答准确率，应该优先补充哪些类型的知识库资料？
+          </button>
+        </aside>
+
+        <!-- 右侧保留最小聊天工作台，用于验证问答与反馈闭环。 -->
+        <section class="panel chat-panel">
+          <div id="messages" class="messages"></div>
+
+          <form id="chat-form" class="composer">
+            <textarea
+              id="question"
+              name="question"
+              rows="4"
+              placeholder="输入关于具身机器人使用场景、未来需求、能力缺口或部署约束的问题"
+              required
+            ></textarea>
+            <div class="composer-actions">
+              <span id="status" class="status">等待提问</span>
+              <button id="send-btn" type="submit">发送问题</button>
+            </div>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <!-- 模板节点由前端脚本克隆，避免手写重复消息 DOM。 -->
+    <template id="message-template">
+      <article class="message">
+        <header class="message-header">
+          <span class="message-role"></span>
+          <span class="message-meta"></span>
+        </header>
+        <div class="message-body"></div>
+        <div class="sources"></div>
+        <div class="feedback-actions"></div>
+      </article>
+    </template>
+
+    <!-- 前端逻辑保持单文件，便于后端阶段快速联调。 -->
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

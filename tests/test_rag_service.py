@@ -12,9 +12,8 @@ def test_rag_service_reuses_persisted_chroma_index(tmp_path):
     settings = Settings(
         knowledge_base_dir=knowledge_dir,
         vector_store_dir=tmp_path / "vector_store",
-        feedback_log_path=tmp_path / "feedback.jsonl",
-        rag_audit_path=tmp_path / "rag.jsonl",
         app_log_path=tmp_path / "app.log",
+        telemetry_db_path=tmp_path / "telemetry.sqlite3",
         embedding_strategy="local_hash",
         vector_store_collection_name="test_collection",
     )
@@ -37,9 +36,8 @@ def test_rag_service_rebuilds_persisted_index_when_knowledge_changes(tmp_path):
     settings = Settings(
         knowledge_base_dir=knowledge_dir,
         vector_store_dir=tmp_path / "vector_store",
-        feedback_log_path=tmp_path / "feedback.jsonl",
-        rag_audit_path=tmp_path / "rag.jsonl",
         app_log_path=tmp_path / "app.log",
+        telemetry_db_path=tmp_path / "telemetry.sqlite3",
         embedding_strategy="local_hash",
         vector_store_collection_name="test_collection",
     )

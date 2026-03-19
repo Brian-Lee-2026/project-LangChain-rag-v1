@@ -28,9 +28,8 @@ class Settings(BaseSettings):
     vector_store_dir: Path = PROJECT_ROOT / "data" / "vector_store"
     vector_store_collection_name: str = "embodied_robot_knowledge"
     embedding_cache_dir: Path = PROJECT_ROOT / "data" / "model_cache"
-    feedback_log_path: Path = PROJECT_ROOT / "logs" / "feedback.jsonl"
-    rag_audit_path: Path = PROJECT_ROOT / "logs" / "rag_events.jsonl"
     app_log_path: Path = PROJECT_ROOT / "logs" / "app.log"
+    telemetry_db_path: Path = PROJECT_ROOT / "logs" / "telemetry.sqlite3"
 
     deepseek_api_key: SecretStr | None = None
     deepseek_model: str = "deepseek-chat"
@@ -68,16 +67,14 @@ class Settings(BaseSettings):
         self.knowledge_base_dir = self._resolve_project_path(self.knowledge_base_dir)
         self.vector_store_dir = self._resolve_project_path(self.vector_store_dir)
         self.embedding_cache_dir = self._resolve_project_path(self.embedding_cache_dir)
-        self.feedback_log_path = self._resolve_env_log_path(self.feedback_log_path)
-        self.rag_audit_path = self._resolve_env_log_path(self.rag_audit_path)
-        self.app_log_path = self._resolve_env_log_path(self.app_log_path)
+        self.app_log_path = self._resolve_env_runtime_path(self.app_log_path)
+        self.telemetry_db_path = self._resolve_env_runtime_path(self.telemetry_db_path)
 
         self.knowledge_base_dir.mkdir(parents=True, exist_ok=True)
         self.vector_store_dir.mkdir(parents=True, exist_ok=True)
         self.embedding_cache_dir.mkdir(parents=True, exist_ok=True)
-        self.feedback_log_path.parent.mkdir(parents=True, exist_ok=True)
-        self.rag_audit_path.parent.mkdir(parents=True, exist_ok=True)
         self.app_log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.telemetry_db_path.parent.mkdir(parents=True, exist_ok=True)
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -106,11 +103,11 @@ class Settings(BaseSettings):
     def _resolve_project_path(self, path: Path) -> Path:
         return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
 
-    def _resolve_env_log_path(self, path: Path) -> Path:
+    def _resolve_env_runtime_path(self, path: Path) -> Path:
         # 默认日志文件按环境分目录，避免 `development` / `production` 日志混写。
         resolved = self._resolve_project_path(path)
         log_root = (PROJECT_ROOT / "logs").resolve()
-        default_log_names = {"app.log", "feedback.jsonl", "rag_events.jsonl"}
+        default_log_names = {"app.log", "telemetry.sqlite3"}
         if resolved.parent == log_root and resolved.name in default_log_names:
             return log_root / self.env_slug / resolved.name
         return resolved

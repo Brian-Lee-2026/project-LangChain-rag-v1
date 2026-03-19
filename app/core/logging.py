@@ -1,9 +1,9 @@
 import json
 import logging
 from datetime import UTC, datetime
-from logging.handlers import RotatingFileHandler
-from pathlib import Path
 from typing import Any
+
+from concurrent_log_handler import ConcurrentRotatingFileHandler
 
 from app.core.config import Settings
 
@@ -76,7 +76,9 @@ class DevConsoleFormatter(logging.Formatter):
 def configure_logging(settings: Settings) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(settings.log_level.upper())
-    root_logger.handlers.clear()
+    for handler in root_logger.handlers[:]:
+        handler.close()
+        root_logger.removeHandler(handler)
 
     console_handler = logging.StreamHandler()
     # 开发环境优先可读性，生产环境控制台保持结构化格式，方便日志采集。
@@ -85,7 +87,7 @@ def configure_logging(settings: Settings) -> None:
     else:
         console_handler.setFormatter(DevConsoleFormatter(settings))
 
-    file_handler = RotatingFileHandler(
+    file_handler = ConcurrentRotatingFileHandler(
         settings.app_log_path,
         maxBytes=2 * 1024 * 1024,
         backupCount=3,
@@ -99,9 +101,3 @@ def configure_logging(settings: Settings) -> None:
 
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
-
-
-def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as file:
-        file.write(json.dumps(payload, ensure_ascii=False) + "\n")

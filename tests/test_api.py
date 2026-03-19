@@ -8,9 +8,8 @@ def test_health_endpoint_returns_project_status(tmp_path):
     settings = Settings(
         knowledge_base_dir=PROJECT_ROOT / "data" / "knowledge",
         vector_store_dir=tmp_path / "vector_store",
-        feedback_log_path=tmp_path / "test_feedback.jsonl",
-        rag_audit_path=tmp_path / "test_rag_events.jsonl",
         app_log_path=tmp_path / "test_app.log",
+        telemetry_db_path=tmp_path / "test_telemetry.sqlite3",
         embedding_strategy="local_hash",
     )
     with TestClient(create_app(settings)) as client:

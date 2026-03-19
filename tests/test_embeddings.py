@@ -36,9 +36,8 @@ def test_huggingface_embeddings_fallback_to_local_hash(monkeypatch, tmp_path):
         knowledge_base_dir=tmp_path / "kb",
         vector_store_dir=tmp_path / "vector",
         embedding_cache_dir=tmp_path / "model_cache",
-        feedback_log_path=tmp_path / "feedback.jsonl",
-        rag_audit_path=tmp_path / "rag.jsonl",
         app_log_path=tmp_path / "app.log",
+        telemetry_db_path=tmp_path / "telemetry.sqlite3",
         embedding_strategy="huggingface",
         embedding_fallback_to_local_hash=True,
     )

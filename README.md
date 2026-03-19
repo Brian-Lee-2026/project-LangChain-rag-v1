@@ -311,13 +311,12 @@ make check-kb
 
 ## 日志与准确率追踪
 
-系统默认生成三类追踪信息：
+系统默认生成两类追踪信息：
 
-- `logs/development/app.log` 或 `logs/production/app.log`：应用运行日志与错误日志
-- `logs/development/rag_events.jsonl` 或 `logs/production/rag_events.jsonl`：问答链路日志
-- `logs/development/feedback.jsonl` 或 `logs/production/feedback.jsonl`：人工反馈日志，可用于统计“回答是否准确”
+- `logs/development/app.log` 或 `logs/production/app.log`：应用运行日志与错误日志，支持多 worker 安全轮转
+- `logs/development/telemetry.sqlite3` 或 `logs/production/telemetry.sqlite3`：统一保存 `rag_events` 和 `feedback_entries` 表的 SQLite 数据库
 
-前端测试页内置“准确 / 不准确”反馈按钮，会把标注结果写入反馈日志，并在 `/api/v1/feedback/summary` 中输出简要统计。
+前端测试页内置“准确 / 不准确”反馈按钮，会把标注结果写入 SQLite，并在 `/api/v1/feedback/summary` 中输出简要统计。
 
 日志系统会自动跟随当前启动模式：
 

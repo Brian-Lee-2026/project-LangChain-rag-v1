@@ -9,7 +9,8 @@ from uuid import uuid4
 from langchain_chroma import Chroma
 
 from app.core.config import Settings
-from app.core.logging import append_jsonl, get_logger
+from app.core.logging import get_logger
+from app.core.telemetry import SQLiteTelemetryStore
 from app.models.schemas import ChatRequest, ChatResponse, HealthResponse, SourceDocument
 from app.services.embeddings import build_embeddings
 from app.services.knowledge_base import load_knowledge_documents, split_documents
@@ -24,9 +25,17 @@ class RAGServiceError(RuntimeError):
 
 
 class RAGService:
-    def __init__(self, settings: Settings, *, force_rebuild: bool = False) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        force_rebuild: bool = False,
+        telemetry_store: SQLiteTelemetryStore | None = None,
+    ) -> None:
         self.settings = settings
         self.logger = get_logger(__name__)
+        self.telemetry_store = telemetry_store or SQLiteTelemetryStore(settings.telemetry_db_path)
+        self.telemetry_store.initialize()
         self.embeddings = build_embeddings(settings)
         self.documents = load_knowledge_documents(settings.knowledge_base_dir)
         self.chunks = split_documents(
@@ -79,21 +88,19 @@ class RAGService:
                 )
                 for item in context_docs
             ]
-            append_jsonl(
-                self.settings.rag_audit_path,
-                {
-                    "event": "rag_answer",
-                    "environment": self.settings.app_env,
-                    "request_id": request_id,
-                    "conversation_id": conversation_id,
-                    "question": question,
-                    "answer": answer,
-                    "model": self.settings.deepseek_model,
-                    "prompt_version": PROMPT_VERSION,
-                    "latency_ms": latency_ms,
-                    "sources": sources_to_json(context_docs),
-                    "created_at": created_at.isoformat(),
-                },
+            self.telemetry_store.record_rag_event(
+                event_type="rag_answer",
+                environment=self.settings.app_env,
+                request_id=request_id,
+                conversation_id=conversation_id,
+                question=question,
+                answer=answer,
+                error=None,
+                model=self.settings.deepseek_model,
+                prompt_version=PROMPT_VERSION,
+                latency_ms=latency_ms,
+                sources=sources_to_json(context_docs),
+                created_at=created_at,
             )
             self.logger.info(
                 "RAG answer generated",
@@ -120,17 +127,19 @@ class RAGService:
                 "RAG answer failed",
                 extra={"request_id": request_id, "question": question},
             )
-            append_jsonl(
-                self.settings.rag_audit_path,
-                {
-                    "event": "rag_error",
-                    "environment": self.settings.app_env,
-                    "request_id": request_id,
-                    "conversation_id": conversation_id,
-                    "question": question,
-                    "error": str(exc),
-                    "created_at": created_at.isoformat(),
-                },
+            self.telemetry_store.record_rag_event(
+                event_type="rag_error",
+                environment=self.settings.app_env,
+                request_id=request_id,
+                conversation_id=conversation_id,
+                question=question,
+                answer=None,
+                error=str(exc),
+                model=self.settings.deepseek_model,
+                prompt_version=PROMPT_VERSION,
+                latency_ms=None,
+                sources=None,
+                created_at=created_at,
             )
             if isinstance(exc, RAGServiceError):
                 raise

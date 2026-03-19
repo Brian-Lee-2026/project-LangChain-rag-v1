@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
+from app.core.telemetry import SQLiteTelemetryStore
 from app.services.feedback_service import FeedbackService
 from app.services.rag_service import RAGService
 
@@ -25,16 +26,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # 应用启动时一次性初始化日志、RAG 服务和反馈服务，避免在请求中重复创建。
         configure_logging(app_settings)
         logger = get_logger(__name__)
+        telemetry_store = SQLiteTelemetryStore(app_settings.telemetry_db_path)
+        telemetry_store.initialize()
         app.state.settings = app_settings
-        app.state.rag_service = RAGService(app_settings)
-        app.state.feedback_service = FeedbackService(app_settings)
+        app.state.telemetry_store = telemetry_store
+        app.state.rag_service = RAGService(app_settings, telemetry_store=telemetry_store)
+        app.state.feedback_service = FeedbackService(app_settings, telemetry_store=telemetry_store)
         logger.info(
             "Application started",
             extra={
                 **app.state.rag_service.health().model_dump(),
                 "app_log_path": str(app_settings.app_log_path),
-                "rag_audit_path": str(app_settings.rag_audit_path),
-                "feedback_log_path": str(app_settings.feedback_log_path),
+                "telemetry_db_path": str(app_settings.telemetry_db_path),
                 "environment": app_settings.app_env,
             },
         )

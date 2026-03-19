@@ -8,8 +8,7 @@ def test_default_log_paths_are_scoped_by_environment():
 
     assert settings.app_env == "production"
     assert settings.app_log_path == PROJECT_ROOT / "logs" / "production" / "app.log"
-    assert settings.rag_audit_path == PROJECT_ROOT / "logs" / "production" / "rag_events.jsonl"
-    assert settings.feedback_log_path == PROJECT_ROOT / "logs" / "production" / "feedback.jsonl"
+    assert settings.telemetry_db_path == PROJECT_ROOT / "logs" / "production" / "telemetry.sqlite3"
 
 
 def test_runtime_mode_maps_to_expected_environment():

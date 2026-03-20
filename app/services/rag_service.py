@@ -59,12 +59,12 @@ class RAGService:
             prompt_version=PROMPT_VERSION,
         )
 
-    def ask(self, payload: ChatRequest) -> ChatResponse:
+    def ask(self, payload: ChatRequest, *, request_id: str | None = None) -> ChatResponse:
         question = payload.question.strip()
         if not question:
             raise ValueError("问题不能为空。")
 
-        request_id = str(uuid4())
+        request_id = request_id or str(uuid4())
         conversation_id = payload.conversation_id or str(uuid4())
         top_k = payload.top_k or self.settings.retrieval_k
         created_at = datetime.now(UTC)
@@ -202,33 +202,51 @@ class RAGService:
         ]
 
     def _load_or_build_vector_store(self, *, force_rebuild: bool) -> Chroma:
-        if not force_rebuild and self._is_persisted_index_current():
-            vector_store = self._create_vector_store()
-            persisted_count = self._count_indexed_chunks(vector_store)
-            if persisted_count == len(self.chunks):
-                self.index_status = "loaded"
-                self.logger.info(
-                    "Loaded persisted vector index",
-                    extra={
-                        "environment": self.settings.app_env,
-                        "collection_name": self.settings.vector_store_collection_name,
-                        "chunk_count": persisted_count,
-                        "vector_store_dir": str(self.settings.vector_store_dir),
-                    },
-                )
-                return vector_store
+        if force_rebuild:
+            self.index_status = "rebuilt"
+            return self._rebuild_vector_store()
 
-            self.logger.warning(
-                "Persisted vector index count mismatch, rebuilding index",
-                extra={
-                    "environment": self.settings.app_env,
-                    "expected_chunk_count": len(self.chunks),
-                    "persisted_chunk_count": persisted_count,
-                },
+        vector_store = self._load_persisted_vector_store_if_current()
+        if vector_store is not None:
+            return vector_store
+
+        if self.settings.is_production:
+            raise RAGServiceError(
+                "生产环境仅加载已构建的向量索引；请先执行 `python scripts/rebuild_index.py` "
+                "或 `make check-kb` 完成索引构建。"
             )
 
         self.index_status = "rebuilt"
         return self._rebuild_vector_store()
+
+    def _load_persisted_vector_store_if_current(self) -> Chroma | None:
+        if not self._is_persisted_index_current():
+            return None
+
+        vector_store = self._create_vector_store()
+        persisted_count = self._count_indexed_chunks(vector_store)
+        if persisted_count == len(self.chunks):
+            self.index_status = "loaded"
+            self.logger.info(
+                "Loaded persisted vector index",
+                extra={
+                    "environment": self.settings.app_env,
+                    "collection_name": self.settings.vector_store_collection_name,
+                    "chunk_count": persisted_count,
+                    "vector_store_dir": str(self.settings.vector_store_dir),
+                },
+            )
+            return vector_store
+
+        self.logger.warning(
+            "Persisted vector index count mismatch, rebuilding index",
+            extra={
+                "environment": self.settings.app_env,
+                "expected_chunk_count": len(self.chunks),
+                "persisted_chunk_count": persisted_count,
+            },
+        )
+        return None
 
     def _create_vector_store(self) -> Chroma:
         return Chroma(

@@ -11,9 +11,6 @@ build/
 dist/
 htmlcov/
 coverage.xml
-logs/*.log
-logs/*.jsonl
-logs/**/*.log
-logs/**/*.jsonl
+logs/
 data/vector_store/
 data/model_cache/

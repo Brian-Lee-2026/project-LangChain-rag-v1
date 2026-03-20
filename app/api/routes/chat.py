@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import get_rag_service
 from app.models.schemas import ChatRequest, ChatResponse
@@ -8,9 +8,13 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 @router.post("", response_model=ChatResponse, summary="知识问答")
-def chat(payload: ChatRequest, service: RAGService = Depends(get_rag_service)) -> ChatResponse:
+def chat(
+    request: Request,
+    payload: ChatRequest,
+    service: RAGService = Depends(get_rag_service),
+) -> ChatResponse:
     try:
-        return service.ask(payload)
+        return service.ask(payload, request_id=request.state.request_id)
     except ValueError as exc:
         # 这里保留参数校验类错误，直接返回 400 给前端，便于用户修正输入。
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
